@@ -14,6 +14,7 @@ import com.yupi.springbootinit.constant.UserConstant;
 import com.yupi.springbootinit.exception.BusinessException;
 import com.yupi.springbootinit.exception.ThrowUtils;
 import com.yupi.springbootinit.manager.AiManager;
+import com.yupi.springbootinit.manager.RedisLimiterManager;
 import com.yupi.springbootinit.model.dto.chart.*;
 import com.yupi.springbootinit.model.dto.file.UploadFileRequest;
 import com.yupi.springbootinit.model.entity.Chart;
@@ -55,6 +56,9 @@ public class ChartController {
 
     @Resource
     private AiManager aiManager;
+
+    @Resource
+    private RedisLimiterManager redisLimiterManager;
 
     // region 增删改查
 
@@ -257,9 +261,11 @@ public class ChartController {
         String originalFilename = multipartFile.getOriginalFilename();
         final List<String> validFileSuffixList = Arrays.asList("csv", "xlsx");
         String suffix = FileUtil.getSuffix(originalFilename);
-        ThrowUtils.throwIf(validFileSuffixList.contains(suffix), ErrorCode.PARAMS_ERROR, "文件后缀非法");
+        ThrowUtils.throwIf(!validFileSuffixList.contains(suffix), ErrorCode.PARAMS_ERROR, "文件后缀非法");
 
         User loginUser = userService.getLoginUser(request);
+        // 限流判断（注意粒度）,每个用户一个限流器
+        redisLimiterManager.doRateLimit("genChartByAi" + loginUser.getId());
 
         long biModelId = 1830246854651535362L;
         // 用户输入
@@ -267,7 +273,7 @@ public class ChartController {
         userInput.append("分析需求：").append("\n");
         String userGoal = goal;
         if (StringUtils.isNotBlank(chartType)) {
-            userGoal += "请使用" + chartType;
+            userGoal += ",请使用" + chartType;
         }
         userInput.append(userGoal).append("\n");
         String csvData = ExcelUtils.excelToCsv(multipartFile);        // 压缩后返回的数据(csv)
