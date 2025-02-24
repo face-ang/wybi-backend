@@ -1,5 +1,7 @@
 # 公共配置文件
 spring:
+#  main:
+#    allow-bean-definition-overriding: true
   application:
     name: wybi-backendwybi
   # 默认 dev 环境
@@ -29,6 +31,13 @@ spring:
     host: localhost
     port: 6379
     timeout: 5000
+  rabbitmq:
+    host: 108.160.140.107
+    port: 5672
+    password: 123456
+    username: guest
+    publisher-confirm-type: CORRELATED # 交换机的确认
+    publisher-returns: true # 队列的确认
   # Elasticsearch 配置
   # todo 需替换配置，然后取消注释
 #  elasticsearch:
